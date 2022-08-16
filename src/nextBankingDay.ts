@@ -72,7 +72,7 @@ export function getDSTEnd (year: number) {
   return new Date(`${ d.toISOString().split('T')[0] }T02:00:00-0500`);
 }
 
-function datesAreTheSame (a: Date, b: Date) {
+export function datesAreTheSame (a: Date, b: Date) {
   return (
     a.getUTCFullYear() === b.getUTCFullYear()
     && a.getUTCMonth() === b.getUTCMonth()
