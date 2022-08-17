@@ -1,2 +1,2 @@
-import nextBankingDay from './nextBankingDay';
-export { nextBankingDay };
+import nextBankingDay, { isBankingDay } from './nextBankingDay';
+export { nextBankingDay, isBankingDay };

@@ -166,6 +166,10 @@ export function checkIfBankingDay (date: Date) {
   ];
 }
 
+export function isBankingDay (date: Date) {
+  return checkIfBankingDay(date)[0];
+}
+
 function isDSTActive (date: Date) {
   const localYear = date.getFullYear();
   const dstStartThisYear = getDSTStartMemoized(localYear);

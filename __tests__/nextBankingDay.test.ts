@@ -1,5 +1,5 @@
 
-import nextBankingDay, { checkIfFedBankHoliday, getDSTStart, getDSTEnd } from '../lib/nextBankingDay';
+import nextBankingDay, { checkIfFedBankHoliday, getDSTStart, getDSTEnd, isBankingDay } from '../lib/nextBankingDay';
 
 const RECENT_DSTS: Array<[ number, [number,number], [number, number] ]> = [
   [2014, [3, 9], [11, 2]],
@@ -223,4 +223,16 @@ describe('nextBankingDay', function () {
     expect(holiday).toEqual('Independence Day');
   });
 
+});
+
+describe('isBankingDay', function () {
+  it('should return true for non-holiday weekdays', function () {
+    expect(isBankingDay(new Date('2021-07-06T12:00:00.000Z'))).toBeTruthy();
+  });
+  it('should return false for non-holiday weekends', function () {
+    expect(isBankingDay(new Date('2021-07-10T12:00:00.000Z'))).toBeFalsy();
+  });
+  it('should return false for holidays', function () {
+    expect(isBankingDay(new Date('2021-07-05T12:00:00.000Z'))).toBeFalsy(); // Sunday-holiday observed Monday
+  });
 });
