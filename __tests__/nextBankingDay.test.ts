@@ -226,24 +226,24 @@ describe('nextBankingDay', function () {
   describe('dayEndsAt5pm option', function () {
     describe('if true', function () {
       it('should return the next banking day before 5pm', function () {
-        const [date] = nextBankingDay(new Date('2020-02-27T16:45:00-0500'), 1, { dayEndsAt5pm: true });
+        const [date] = nextBankingDay(new Date('2020-02-27T16:45:00-0500'), 1, { useBusinessHours: true });
         expect(date.toISOString()).toEqual('2020-02-28T14:00:00.000Z');
       });
 
       it('should return the day 2 banking days from now after 5pm', function () {
-        const [date] = nextBankingDay(new Date('2020-02-27T17:15:00-0500'), 1, { dayEndsAt5pm: true });
+        const [date] = nextBankingDay(new Date('2020-02-27T17:15:00-0500'), 1, { useBusinessHours: true });
         expect(date.toISOString()).toEqual('2020-03-02T14:00:00.000Z');
       });
     });
 
     describe('if false', function () {
       it('should return the next banking day after 5pm', function () {
-        const [date] = nextBankingDay(new Date('2020-02-27T17:15:00-0500'), 1, { dayEndsAt5pm: false });
+        const [date] = nextBankingDay(new Date('2020-02-27T17:15:00-0500'), 1, { useBusinessHours: false });
         expect(date.toISOString()).toEqual('2020-02-28T14:00:00.000Z');
       });
 
       it('should return the day 2 banking days from now after midnight', function () {
-        const [date] = nextBankingDay(new Date('2020-02-28T01:15:00-0500'), 1, { dayEndsAt5pm: false });
+        const [date] = nextBankingDay(new Date('2020-02-28T01:15:00-0500'), 1, { useBusinessHours: false });
         expect(date.toISOString()).toEqual('2020-03-02T14:00:00.000Z');
       });
     });

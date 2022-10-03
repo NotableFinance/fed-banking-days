@@ -45,3 +45,14 @@ Optionally, provide a minimum number of days to advance:
 > nextBankingDay(new Date('2022-06-17T06:00:00Z'), 10)
 [ 2022-07-05T13:00:00.000Z, 'Independence Day' ]
 ```
+
+#### `useBusinessHours`
+
+By default, `nextBankingDay` will consider times after end-of-business (5pm ET) to be part of the next banking day, for more conservative estimates about ACH deposit availability. To disable this behavior and consider any time of a day to be part of that same banking day, pass `useBusinessHours: false`:
+
+```javascript
+> nextBankingDay(new Date('2022-06-15T19:00:00-04:00')) // default behavior
+[ 2022-06-17T13:00:00.000Z, undefined ]
+> nextBankingDay(new Date('2022-06-15T19:00:00-04:00'), 1, { useBusinessHours: false })
+[ 2022-06-16T13:00:00.000Z, undefined ]
+```

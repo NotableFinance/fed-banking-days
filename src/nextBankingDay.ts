@@ -201,10 +201,10 @@ const getDSTStartMemoized = memoize(getDSTStart);
 const getDSTEndMemoized = memoize(getDSTEnd);
 
 // Count is the minimum number of business days to advance
-export default function nextBankingDay (date: Date, count= 1, options: { dayEndsAt5pm?: boolean } = {}) {
+export default function nextBankingDay (date: Date, count= 1, options: { useBusinessHours?: boolean } = {}) {
   // If the day ends at 5pm, then nextBankingDay('Thursday 5:15pm') === Monday
   // It's a more conservative estimate of the next banking day, for estimating deposit availability
-  const { dayEndsAt5pm = true } = options;
+  const { useBusinessHours = true } = options;
   const localYear = date.getFullYear(); // Okay if near a year boundary because DST changes are months away
   const localMonth = date.getMonth();
   const localDate = date.getDate();
@@ -225,12 +225,10 @@ export default function nextBankingDay (date: Date, count= 1, options: { dayEnds
   // today. (Ignores weekday vs weekend because that will be accounted for
   // later.) Aligning the reference date to start of business hours avoids
   // needing to account for its TZ offset later when comparing.
-  if (dayEndsAt5pm) {
-    if (startingMS > businessEndMS) {
-      startingMS = businessEndMS + ONE_HOUR_MS * 16;
-    } else {
-      startingMS = businessEndMS - ONE_HOUR_MS * 8;
-    }
+  if (useBusinessHours && startingMS > businessEndMS) {
+    startingMS = businessEndMS + ONE_HOUR_MS * 16;
+  } else {
+    startingMS = businessEndMS - ONE_HOUR_MS * 8;
   }
 
   let next: Date,
