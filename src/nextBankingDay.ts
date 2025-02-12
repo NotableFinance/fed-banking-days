@@ -70,76 +70,68 @@ export function getDSTEnd (year: number) {
   return new Date(`${ d.toISOString().split('T')[0] }T02:00:00-0500`);
 }
 
-function datesAreTheSame (a: Date, b: Date) {
-  return (
-    a.getUTCFullYear() === b.getUTCFullYear()
-    && a.getUTCMonth() === b.getUTCMonth()
-    && a.getUTCDate() === b.getUTCDate()
-  );
-}
-
 function getNthDayOfMonth (year: number, month: number, dayOfWeek: number, nth: number) {
   // Operates at 1200 hours UTC to avoid DST issues for the US
-  let nthAsDate = new Date(year, month, 1, 12, 0, 0, 0);
+  let nth_as_date = new Date(year, month, 1, 12, 0, 0, 0);
   if (nth > 0) { // Relative to start of month
     // Walk forward until we reach the correct day of the week
-    while (nthAsDate.getUTCDay() !== dayOfWeek) {
-      nthAsDate = new Date(nthAsDate.getTime() + ONE_DAY_MS);
+    while (nth_as_date.getUTCDay() !== dayOfWeek) {
+      nth_as_date = new Date(nth_as_date.getTime() + ONE_DAY_MS);
     }
     if (nth > 1) {
       // Walk forward a number of weeks to get the nth
-      nthAsDate = new Date(nthAsDate.getTime() + ONE_DAY_MS * 7 * (nth - 1));
+      nth_as_date = new Date(nth_as_date.getTime() + ONE_DAY_MS * 7 * (nth - 1));
     }
   } else { // Relative to end of month
     // Change start to end of month (go forward 1 month then back 1 day)
-    nthAsDate.setMonth(month + 1); // Will roll over the year if `month` is 11 (December)
-    nthAsDate.setDate(0); // Will roll month back
+    nth_as_date.setMonth(month + 1); // Will roll over the year if `month` is 11 (December)
+    nth_as_date.setDate(0); // Will roll month back
     // Walk backward until we reach the correct day of the week
-    while (nthAsDate.getUTCDay() !== dayOfWeek) {
-      nthAsDate = new Date(nthAsDate.getTime() - ONE_DAY_MS);
+    while (nth_as_date.getUTCDay() !== dayOfWeek) {
+      nth_as_date = new Date(nth_as_date.getTime() - ONE_DAY_MS);
     }
     // Walk backward a number of weeks to get the nth
     if (nth < -1) {
-      nthAsDate = new Date(nthAsDate.getTime() - ONE_DAY_MS * 7 * (Math.abs(nth) - 1));
+      nth_as_date = new Date(nth_as_date.getTime() - ONE_DAY_MS * 7 * (Math.abs(nth) - 1));
     }
   }
-  return nthAsDate;
+  return nth_as_date;
 }
 
 export function checkIfFedBankHoliday (date: Date) {
   const year = date.getFullYear();
   const month = date.getMonth();
-  const dayOfMonth = date.getDate();
-  const dayOfWeek = date.getDay();
+  const day_of_month = date.getDate();
+  const day_of_week = date.getDay();
 
   if (HOLIDAYS_BY_MONTH[month + 1]) {
-    for (let holidayDef of HOLIDAYS_BY_MONTH[month + 1]) {
+    for (const holiday_def of HOLIDAYS_BY_MONTH[month + 1]) {
 
-      if (Array.isArray(holidayDef.def)) {
-        const holidayDefDayOfWeek = holidayDef.def[0];
-        const holidayDefNth = holidayDef.def[1];
+      if (Array.isArray(holiday_def.def)) {
+        const holiday_def_day_of_week = holiday_def.def[0];
+        const holiday_def_nth = holiday_def.def[1];
         // Dynamic holiday, the nth day of week in the month (note the ones the
         // Fed observes are always on weekdays)
-        if (dayOfWeek === holidayDefDayOfWeek) { // Quick check to see if it's worth computing the actual date
-          const holiday = getNthDayOfMonth(year, month, holidayDefDayOfWeek, holidayDefNth);
+        if (day_of_week === holiday_def_day_of_week) { // Quick check to see if it's worth computing the actual date
+          const holiday = getNthDayOfMonth(year, month, holiday_def_day_of_week, holiday_def_nth);
           if (datesAreTheSame(holiday, date)) {
-            return holidayDef.name;
+            return holiday_def.name;
           }
         }
 
-      } else if (holidayDef.def === dayOfMonth) {
+      } else if (holiday_def.def === day_of_month) {
         // Static holiday during week exact match
         // (assumes the weekday constraint in nextBankingDay)
-        return holidayDef.name;
+        return holiday_def.name;
 
       } else {
         // Static holiday lands on Sunday, observed Monday
-        let holiday = new Date(year, month, holidayDef.def);
+        let holiday = new Date(year, month, holiday_def.def);
         if (holiday.getDay() === 0) {
           holiday = new Date(holiday.getTime() + ONE_DAY_MS);
         }
         if (datesAreTheSame(holiday, date)) {
-          return holidayDef.name;
+          return holiday_def.name;
         }
       }
     }
@@ -186,14 +178,95 @@ function isDSTActive (date: Date) {
   }
 }
 
-function _pad (n: number) {
+// Don't expect to be checking the DST for more than a couple years in a given
+// memory session so this should not be a memory leak.
+const getDSTStartMemoized = _simpleMemoize(getDSTStart);
+const getDSTEndMemoized = _simpleMemoize(getDSTEnd);
+
+// Count is the minimum number of business days to advance
+export default function nextBankingDay (from_date: Date, count= 1, options: { useBusinessHours?: boolean, use_business_hours?: boolean } = {}) {
+  // If the day ends at 5pm, then nextBankingDay('Thursday 5:15pm') === Monday
+  // It's a more conservative estimate of the next banking day, for estimating deposit availability
+  let use_business_hours = true;
+  if (options.use_business_hours !== undefined) {
+    use_business_hours = options.use_business_hours;
+  } else if (options.useBusinessHours !== undefined) {
+    use_business_hours = options.useBusinessHours;
+  }
+  const local_year = from_date.getFullYear(); // Okay if near a year boundary because DST changes are months away
+  const local_month = from_date.getMonth();
+  const local_date = from_date.getDate();
+
+  // Anchor business hours to EST or EDT
+  let business_tz_offset = -5;
+  if (isDSTActive(from_date)) {
+    business_tz_offset = -4;
+  }
+
+  // Calculate the end of the business hours for that day
+  const business_end = new Date(`${ local_year }-${ _pad1(local_month + 1) }-${ _pad1(local_date) }T${ BUSINESS_HOURS[1] }:00:00-0${ Math.abs(business_tz_offset) }:00`);
+  let starting_ms = from_date.getTime();
+  let business_end_ms = business_end.getTime();
+
+  // If start is after end of business hours that day, move it to the start of
+  // business the next day (+ 16 hours), otherwise move it to start of business
+  // today. (Ignores weekday vs weekend because that will be accounted for
+  // later.) Aligning the reference date to start of business hours avoids
+  // needing to account for its TZ offset later when comparing.
+  if (use_business_hours && starting_ms > business_end_ms) {
+    starting_ms = business_end_ms + ONE_HOUR_MS * 16;
+  } else {
+    starting_ms = business_end_ms - ONE_HOUR_MS * 8;
+  }
+
+  let next: Date;
+  let upcoming_holiday;
+  let num_calendar_days_to_advance = 1;
+  let num_bank_days_found = 0;
+  while (num_bank_days_found < count) {
+    // Walk forward one day at a time until an eligible day is found.
+    next = new Date(starting_ms + num_calendar_days_to_advance * ONE_DAY_MS);
+    const [isBankDay, matchedHoliday] = checkIfBankingDay(next);
+    if (isBankDay) {
+      num_bank_days_found += 1;
+    } else if (matchedHoliday) {
+      // Capture the last crossed holiday for feedback to the user.
+      upcoming_holiday = matchedHoliday;
+    }
+    num_calendar_days_to_advance += 1;
+  }
+
+  // Adjust the resulting date by one hour if it crossed a DST boundary,
+  // either forward or backward depending on which boundary it crossed, so that
+  // it is 9am ET.
+  const next_in_DST = isDSTActive(next!);
+  if (business_tz_offset === -5 && next_in_DST) {
+    next = new Date(next!.getTime() - ONE_HOUR_MS);
+  } else if (business_tz_offset === -4 && !next_in_DST) {
+    next = new Date(next!.getTime() + ONE_HOUR_MS);
+  }
+
+  return [next!, upcoming_holiday] as [Date, string | true | undefined];
+}
+
+
+
+function datesAreTheSame (a: Date, b: Date) {
+  return (
+    a.getUTCFullYear() === b.getUTCFullYear()
+    && a.getUTCMonth() === b.getUTCMonth()
+    && a.getUTCDate() === b.getUTCDate()
+  );
+}
+
+function _pad1 (n: number) {
   if (n < 10) {
     return `0${ n }`;
   }
   return n.toString();
 }
 
-function simpleMemoize (fn: Function) {
+function _simpleMemoize (fn: Function) {
   const cache = new Map();
   return function (arg: unknown) {
     if (cache.has(arg)) {
@@ -203,70 +276,4 @@ function simpleMemoize (fn: Function) {
     cache.set(arg, result);
     return result;
   };
-}
-
-// Don't expect to be checking the DST for more than a couple years in a given
-// memory session so this should not be a memory leak.
-const getDSTStartMemoized = simpleMemoize(getDSTStart);
-const getDSTEndMemoized = simpleMemoize(getDSTEnd);
-
-// Count is the minimum number of business days to advance
-export default function nextBankingDay (date: Date, count= 1, options: { useBusinessHours?: boolean } = {}) {
-  // If the day ends at 5pm, then nextBankingDay('Thursday 5:15pm') === Monday
-  // It's a more conservative estimate of the next banking day, for estimating deposit availability
-  const { useBusinessHours = true } = options;
-  const localYear = date.getFullYear(); // Okay if near a year boundary because DST changes are months away
-  const localMonth = date.getMonth();
-  const localDate = date.getDate();
-
-  // Anchor business hours to EST or EDT
-  let businessTZOffset = -5;
-  if (isDSTActive(date)) {
-    businessTZOffset = -4;
-  }
-
-  // Calculate the end of the business hours for that day
-  const businessEnd = new Date(`${ localYear }-${ _pad(localMonth + 1) }-${ _pad(localDate) }T${ BUSINESS_HOURS[1] }:00:00-0${ Math.abs(businessTZOffset) }:00`);
-  let startingMS = date.getTime();
-  let businessEndMS = businessEnd.getTime();
-
-  // If start is after end of business hours that day, move it to the start of
-  // business the next day (+ 16 hours), otherwise move it to start of business
-  // today. (Ignores weekday vs weekend because that will be accounted for
-  // later.) Aligning the reference date to start of business hours avoids
-  // needing to account for its TZ offset later when comparing.
-  if (useBusinessHours && startingMS > businessEndMS) {
-    startingMS = businessEndMS + ONE_HOUR_MS * 16;
-  } else {
-    startingMS = businessEndMS - ONE_HOUR_MS * 8;
-  }
-
-  let next: Date,
-    upcomingHoliday;
-  let numCalendarDaysToAdvance = 1;
-  let numBankDaysFound = 0;
-  while (numBankDaysFound < count) {
-    // Walk forward one day at a time until an eligible day is found.
-    next = new Date(startingMS + numCalendarDaysToAdvance * ONE_DAY_MS);
-    const [isBankDay, matchedHoliday] = checkIfBankingDay(next);
-    if (isBankDay) {
-      numBankDaysFound += 1;
-    } else if (matchedHoliday) {
-      // Capture the last crossed holiday for feedback to the user.
-      upcomingHoliday = matchedHoliday;
-    }
-    numCalendarDaysToAdvance += 1;
-  }
-
-  // Adjust the resulting date by one hour if it crossed a DST boundary,
-  // either forward or backward depending on which boundary it crossed, so that
-  // it is 9am ET.
-  const nextInDST = isDSTActive(next!);
-  if (businessTZOffset === -5 && nextInDST) {
-    next = new Date(next!.getTime() - ONE_HOUR_MS);
-  } else if (businessTZOffset === -4 && !nextInDST) {
-    next = new Date(next!.getTime() + ONE_HOUR_MS);
-  }
-
-  return [next!, upcomingHoliday] as [Date, string | true | undefined];
 }
