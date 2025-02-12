@@ -18,8 +18,6 @@ result will always be start of business in that timezone (9am).
 
 */
 
-import memoize = require('lodash/memoize');
-
 const ONE_HOUR_MS = 1000 * 60 * 60;
 const ONE_DAY_MS = ONE_HOUR_MS * 24;
 
@@ -195,10 +193,22 @@ function _pad (n: number) {
   return n.toString();
 }
 
+function simpleMemoize (fn: Function) {
+  const cache = new Map();
+  return function (arg: unknown) {
+    if (cache.has(arg)) {
+      return cache.get(arg);
+    }
+    const result = fn(arg);
+    cache.set(arg, result);
+    return result;
+  };
+}
+
 // Don't expect to be checking the DST for more than a couple years in a given
 // memory session so this should not be a memory leak.
-const getDSTStartMemoized = memoize(getDSTStart);
-const getDSTEndMemoized = memoize(getDSTEnd);
+const getDSTStartMemoized = simpleMemoize(getDSTStart);
+const getDSTEndMemoized = simpleMemoize(getDSTEnd);
 
 // Count is the minimum number of business days to advance
 export default function nextBankingDay (date: Date, count= 1, options: { useBusinessHours?: boolean } = {}) {
