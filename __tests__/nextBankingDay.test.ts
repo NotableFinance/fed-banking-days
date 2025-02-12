@@ -187,7 +187,7 @@ describe('nextBankingDay', function () {
   it('should skip dynamic holidays relative to the start of the month', function () {
     const [date, holiday] = nextBankingDay(new Date('2020-02-14T12:00:00.000Z'));
     expect(date.toISOString()).toEqual('2020-02-18T14:00:00.000Z');
-    expect(holiday).toEqual("Washington's Birthday/Presidents' Day");
+    expect(holiday).toEqual("Washington’s Birthday");
   });
 
   it('should skip dynamic holidays relative to the end of the month', function () {
@@ -199,7 +199,7 @@ describe('nextBankingDay', function () {
   it('should skip static holidays during week', function () {
     const [date, holiday] = nextBankingDay(new Date('2019-12-31T12:00:00.000Z'));
     expect(date.toISOString()).toEqual('2020-01-02T14:00:00.000Z');
-    expect(holiday).toEqual("New Year's Day");
+    expect(holiday).toEqual("New Year’s Day");
   });
 
   it('should ignore static holidays on saturday', function () {

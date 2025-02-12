@@ -31,15 +31,15 @@ type Holidays = { [key: string]: [number, Def] }
 // Can be either exact month–date pair ([month,date]) or some Nth day of week
 // of month ([month,[0-indexed-day-of-week, n]]). Months 1-indexed to match reality.
 const HOLIDAYS: Holidays = {
-  "New Year's Day": [1,1],
-  "Birthday of Martin Luther King Jr.": [1,[1,3]], // 3rd Monday in January
-  "Washington's Birthday/Presidents' Day": [2,[1,3]], // 3rd Monday in February
+  "New Year’s Day": [1,1],
+  "Birthday of Martin Luther King, Jr.": [1,[1,3]], // 3rd Monday in January
+  "Washington’s Birthday": [2,[1,3]], // 3rd Monday in February
   "Memorial Day": [5,[1,-1]], // Last Monday in May
   "Juneteenth National Independence Day": [6,19],
   "Independence Day": [7,4],
   "Labor Day": [9,[1,1]], // First Monday in September
-  "Columbus Day/Indigenous People's Day": [10,[1,2]], // 2nd Monday in October
-  "Veteran's Day": [11,11],
+  "Indigenous People’s Day": [10,[1,2]], // 2nd Monday in October
+  "Veterans Day": [11,11],
   "Thanksgiving Day": [11,[4,4]], // 4th Thursday in November
   "Christmas Day": [12,25],
 };
@@ -232,7 +232,7 @@ export default function nextBankingDay (date: Date, count= 1, options: { useBusi
   }
 
   let next: Date,
-   upcomingHoliday;
+    upcomingHoliday;
   let numCalendarDaysToAdvance = 1;
   let numBankDaysFound = 0;
   while (numBankDaysFound < count) {
