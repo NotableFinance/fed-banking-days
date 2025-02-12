@@ -10,8 +10,8 @@ https://www.federalreserve.gov/aboutthefed/k8.htm
 
 Packages like @date/holiday unfortunately assume holidays on Saturday will be
 observed on the preceding Friday, as is standard procedure for Federal employees
-(https://www.opm.gov/policy-data-oversight/pay-leave/federal-holidays/), so we
-need a different implementation.
+(https://www.opm.gov/policy-data-oversight/pay-leave/federal-holidays/), so
+applications that adhere to the Fed schedule need a different implementation.
 
 nextBankingDay is anchored to US Eastern (America/New_York) timezone, and the
 result will always be start of business in that timezone (9am).

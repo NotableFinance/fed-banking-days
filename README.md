@@ -1,7 +1,7 @@
 
 # @notablefi/fed-banking-days
 
-A programmatic implementation of the [Federal Reserve holiday schedule](https://www.federalreserve.gov/aboutthefed/k8.htm).
+A programmatic implementation of the [Federal Reserve holiday schedule](https://www.federalreserve.gov/aboutthefed/k8.htm). Useful for providing timing estimates for Fed-processed transactions like ACH transfers.
 
 ## Installation
 
