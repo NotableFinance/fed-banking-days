@@ -16,7 +16,7 @@
     "business days"
   ],
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "homepage": "https://github.com/NotableFinance/fed-banking-days",
   "scripts": {
