@@ -98,7 +98,7 @@ function getNthDayOfMonth (year: number, month: number, dayOfWeek: number, nth: 
   return nth_as_date;
 }
 
-export function checkIfFedBankHoliday (date: Date) {
+export function checkIfFedBankHoliday (date: Date): string | null {
   const year = date.getFullYear();
   const month = date.getMonth();
   const day_of_month = date.getDate();
@@ -136,7 +136,7 @@ export function checkIfFedBankHoliday (date: Date) {
       }
     }
   }
-  return false;
+  return null;
 }
 
 function checkIfWeekday (date: Date) {
@@ -144,16 +144,16 @@ function checkIfWeekday (date: Date) {
   return dayOfWeek > 0 && dayOfWeek < 6;
 }
 
-export function checkIfBankingDay (date: Date) {
-  let holiday;
+export function checkIfBankingDay (date: Date): readonly [true, null] | readonly [false, string | null] {
+  let holiday: string | null;
   const isWeekday = checkIfWeekday(date);
   if (isWeekday) {
     holiday = checkIfFedBankHoliday(date);
   }
-  return [
-    isWeekday && !holiday,
-    holiday,
-  ];
+  if (isWeekday && !holiday) {
+    return [true, null] as const;
+  }
+  return [false, holiday] as const;
 }
 
 export function isBankingDay (date: Date) {
@@ -184,7 +184,16 @@ const getDSTStartMemoized = _simpleMemoize(getDSTStart);
 const getDSTEndMemoized = _simpleMemoize(getDSTEnd);
 
 // Count is the minimum number of business days to advance
-export default function nextBankingDay (from_date: Date, count= 1, options: { useBusinessHours?: boolean, use_business_hours?: boolean } = {}) {
+/**
+ * Get the next banking day after the given date
+ *
+ * @param from_date - a Date to start from
+ * @param count - default 1, the Number of banking days to advance
+ * @param options.use_business_hours - default true, consider the day over at 5pm ET so the count starts from the next calendar day
+ * @param options.useBusinessHours - alternate format of use_business_hours for legacy compatibility
+ * @returns
+ */
+export default function nextBankingDay (from_date: Date, count = 1, options: { useBusinessHours?: boolean, use_business_hours?: boolean } = {}) {
   // If the day ends at 5pm, then nextBankingDay('Thursday 5:15pm') === Monday
   // It's a more conservative estimate of the next banking day, for estimating deposit availability
   let use_business_hours = true;
@@ -220,7 +229,7 @@ export default function nextBankingDay (from_date: Date, count= 1, options: { us
   }
 
   let next: Date;
-  let upcoming_holiday;
+  let upcoming_holiday: string;
   let num_calendar_days_to_advance = 1;
   let num_bank_days_found = 0;
   while (num_bank_days_found < count) {
@@ -246,7 +255,7 @@ export default function nextBankingDay (from_date: Date, count= 1, options: { us
     next = new Date(next!.getTime() + ONE_HOUR_MS);
   }
 
-  return [next!, upcoming_holiday] as [Date, string | true | undefined];
+  return [next!, upcoming_holiday] as const;
 }
 
 
