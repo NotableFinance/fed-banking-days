@@ -1,8 +1,8 @@
 {
   "private": true,
-  "version": "1.2.0",
-  "name": "@notablefi/fed-banking-days",
-  "description": "",
+  "version": "1.3.0",
+  "name": "fed-banking-days",
+  "description": "Date helpers to calculate future banking days based on Federal Reserve holidays",
   "main": "lib/index.js",
   "author": "Notable Finance <dev@notablefi.com>",
   "license": "MIT",

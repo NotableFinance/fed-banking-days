@@ -1,20 +1,28 @@
 
 # @notablefi/fed-banking-days
 
-A programmatic implementation of the [Federal Reserve holiday schedule](https://www.federalreserve.gov/aboutthefed/k8.htm). Useful for providing timing estimates for Fed-processed transactions like ACH transfers.
+A programmatic implementation of the United States [Federal Reserve holiday schedule](https://www.federalreserve.gov/aboutthefed/k8.htm). Useful for providing timing estimates for Fed-processed transactions like ACH transfers.
 
 ## Installation
 
-Add to your `package.json` (not in npm yet):
+Install using npm:
 
-  ```
-  "@notablefi/fed-banking-days": "https://github.com/NotableFinance/fed-banking-days.git#v1.1.0"
-  ```
+```bash
+npm install fed-banking-days
+```
 
 ## Usage
 
+Typescript:
+
 ```typescript
-import { nextBankingDay } from '@notablefi/fed-banking-days';
+import { nextBankingDay } from 'fed-banking-days';
+```
+
+or JavaScript:
+
+```javascript
+const { nextBankingDay } = require('fed-banking-days');
 ```
 
 ### `nextBankingDay`
@@ -56,3 +64,13 @@ By default, `nextBankingDay` will consider times after end-of-business (5pm ET) 
 > nextBankingDay(new Date('2022-06-15T19:00:00-04:00'), 1, { useBusinessHours: false })
 [ 2022-06-16T13:00:00.000Z, undefined ]
 ```
+
+## Author
+
+[Notable Finance LLC](https://notablefi.com)
+
+## License
+
+This package is licensed under the [MIT License](https://opensource.org/licenses/MIT).
+
+See ./LICENSE for more information.
